@@ -1,0 +1,16 @@
+{
+    "<foo>": {
+        "@some-attr": "string"
+    },
+    "<this-is-my-awesome-custom-tag>": {
+        "@some-attr": "string"
+    },
+    "<foo>": {
+        "@some-attr": "string"
+    },
+    "<open-tag-only>": {
+        "open-tag-only": true
+    },
+
+    "tags-dir": "./my-tags"
+}

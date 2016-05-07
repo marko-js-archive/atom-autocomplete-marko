@@ -1,0 +1,27 @@
+{
+  "name": "autocomplete-marko",
+  "version": "1.0.0",
+  "description": "Marko element and attribute autocompletions",
+  "main": "./src/main",
+  "license": "MIT",
+  "repository": "https://github.com/marko-js/atom-autocomplete-marko",
+  "engines": {
+    "atom": ">=0.174.0 <2.0.0"
+  },
+  "providedServices": {
+    "autocomplete.provider": {
+      "versions": {
+        "2.0.0": "getProvider"
+      }
+    }
+  },
+  "devDependencies": {
+    "request": "^2.53.0"
+  },
+  "dependencies": {
+    "fuzzaldrin-plus": "^0.3.1",
+    "lasso-package-root": "^1.0.0",
+    "marko": "^3.1.9",
+    "raptor-async": "^1.1.3"
+  }
+}
