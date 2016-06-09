@@ -16,7 +16,6 @@
     }
   },
   "devDependencies": {
-    "request": "^2.53.0"
   },
   "dependencies": {
     "fuzzaldrin-plus": "^0.3.1",
