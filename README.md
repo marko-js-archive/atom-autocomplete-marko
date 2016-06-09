@@ -5,6 +5,12 @@ HTML Autocomplete Package
 
 This provider uses the Marko compiler to get an accurate list of available Marko custom tags and attributes for each template. In addition, this provider also provides full support for suggesting completions for standard HTML tags and attributes.
 
+# Installation
+
+```
+apm install autocomplete-marko
+```
+
 # Features
 
 ## Custom tags and attributes
