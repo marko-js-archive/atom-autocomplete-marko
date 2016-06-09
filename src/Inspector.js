@@ -7,11 +7,16 @@ var prefixRegExp = /[A-Za-z0-9_\-\.\#]+$/;
 
 var tagNameCharsRegExp = /[a-zA-Z0-9_#.:-]/;
 
-var tagNameRegExp = /[a-zA-Z0-9.\-:]+$/;
+var tagNameRegExp = /[a-zA-Z0-9.\-:#]+$/;
+
+var endingTagRegExp = /<\/([a-zA-Z0-9.\-:]+)$/;
 
 var attrNameCharsRegExp = /[a-zA-Z0-9_#.:-]/;
 
 var attrNameRegExp = /[a-zA-Z0-9.\-:]+$/;
+
+var attrCompletionRegExp = /([a-zA-Z0-9.\-:]+)(=["'][A-Za-z0-9_\-\.\#]*)?$/;
+var tagCompletionRegExp = /([a-zA-Z0-9.\-:]+)$/;
 
 var scopesLookup = {
     // Attribute name:
@@ -49,140 +54,98 @@ class Inspector {
         var line = this.lineUpToPos(bufferPosition);
         var scopeDescriptor = request.scopeDescriptor;
 
-        var prefixMatches = prefixRegExp.exec(line);
-        var prefix = prefixMatches ? prefixMatches[0] : '';
+
 
         this.pos = bufferPosition;
         this.line = line;
-        this.prefix = prefix;
         this.scopeDescriptor = scopeDescriptor;
     }
 
-    inspect(pos) {
-        pos = pos || this.pos;
+    inspect() {
+        var pos = this.pos;
 
-        let scopeNames = this.getScopeNames(pos);
-
-        if (scopeNames.length === 1 && scopeNames[0] === 'text.marko') {
-            // It looks like we are outside the scope of any interesting tag.
-            // We need to scan backwards to find the previous completionType
-            let prevInspected = this.inspectPrevToken(pos);
-            if (prevInspected) {
-                if (prevInspected.completionType === completionType.TAG_START) {
-                    // The previous completionType was a tag start. If there was any whitespace
-                    // then we are doing autocomplete for attributes
-                    if (prevInspected.hasWhitespace) {
-                        prevInspected.completionType = completionType.ATTR_NAME;
-                        prevInspected.tagName = this.getTagNameFromPos(pos);
-                    } else {
-                        // Looks like we are at the end of the tag name: <sp|>...
-                        // We don't want to complete the ending tag when doing the
-                        // autocomplete since there is already an ending '>'
-                        prevInspected.shouldCompleteEndingTag = false;
-                    }
-                } else if (prevInspected.completionType === completionType.ATTR_NAME ||
-                           prevInspected.completionType === completionType.ATTR_VALUE) {
-
-                    if (prevInspected.hasWhitespace) {
-                        prevInspected.completionType = completionType.ATTR_NAME;
-                        prevInspected.tagName = this.getTagNameFromPos(pos);
-                    }
-                }
-
-                return prevInspected;
-            }
+        let inspected = this.getTagAndAttributeNameFromPos(pos);
+        if (!inspected) {
+            return null;
         }
 
-        let inspected = {};
+        let attrName = inspected.attributeName;
+        let tagName = inspected.tagName;
+        let line = this.lineUpToPos(pos);
+        let prefixMatches = prefixRegExp.exec(line);
+        let prefix = prefixMatches ? prefixMatches[0] : '';
 
-        for (let i=0; i<scopeNames.length; i++) {
-            let scopeName = scopeNames[i];
-            var scopeInfo = scopesLookup[scopeName];
-            if (scopeInfo) {
-                inspected.concise = scopeInfo.concise;
+        // Check for shorthand but only if it is not a concise tag
+        let shorthandMatches = tagShorthandRegExp.exec(tagName);
+        if (shorthandMatches) {
+            inspected.tagName = shorthandMatches[1];
+            inspected.hasShorthand = true;
+        }
 
-                if (scopeInfo.type === scopeType.TAG) {
-                    inspected.completionType = completionType.TAG_START;
-                    inspected.shouldCompleteEndingTag = true;
-                } else if (scopeInfo.type === scopeType.ATTR_NAME) {
-                    inspected.completionType = completionType.ATTR_NAME;
-                    inspected.tagName = this.getTagNameFromPos(pos);
-                    inspected.shouldCompleteAttributeValue = scopeInfo.shouldCompleteAttributeValue;
-                } else if (scopeInfo.type === scopeType.STRING) {
-                    let tagAndAttrName = this.getTagAndAttributeNameFromPos(pos);
-                    if (tagAndAttrName) {
+        if (attrName) {
+            // Make sure the previous attribute is what ends at the current cursor position
+            let matches = attrCompletionRegExp.exec(line);
+            if (matches) {
+                let expectedAttrName = matches[1];
+                if (expectedAttrName === attrName) {
+                    if (matches[2]) {
+                        // The last attribute has a string value: foo="|
                         inspected.completionType = completionType.ATTR_VALUE;
-                        inspected.tagName = tagAndAttrName.tagName;
-                        inspected.attributeName = tagAndAttrName.attributeName;
-
-                        if (this.charAt(pos) !== '') {
-                            inspected.attributeValueType = 'string';
+                        inspected.attributeValueType = 'string';
+                    } else {
+                        inspected.completionType = completionType.ATTR_NAME;
+                    }
+                }
+            }
+        } else {
+            // Make sure the previous tag name is what ends at the current cursor position
+            let matches = tagCompletionRegExp.exec(line);
+            if (matches) {
+                let expectedTagName = matches[1];
+                if (expectedTagName === tagName) {
+                    inspected.completionType = completionType.TAG_START;
+                    if (!inspected.concise) {
+                        if (this.isTagAtPos(pos)) {
+                            inspected.shouldCompleteEndingTag = true;
                         }
                     }
-                } else if (scopeInfo.type === scopeType.ATTR_NAME_VALUE_SEPARATOR) {
-                    if (this.charAt(pos) === '=') {
-                        // Cursor is positioned at: name|=foo
-                        // We are are completing the attribute name
-                        inspected.completionType = completionType.ATTR_NAME;
-                        inspected.shouldCompleteAttributeValue = false;
-                    } else {
-                        // Cursor is positioned at: name=|<EOL>
-                        // We are are completing the attribute value
-                        inspected.completionType = completionType.ATTR_VALUE;
-                    }
+                }
+            }
+        }
 
-                    let tagAndAttrName = this.getTagAndAttributeNameFromPos(pos);
-                    if (tagAndAttrName) {
-                        inspected.tagName = tagAndAttrName.tagName;
-                        inspected.attributeName = tagAndAttrName.attributeName;
+        if (!inspected.completionType) {
+            let scopeNames = this.getScopeNames(pos);
+            if (scopeNames.length === 1 && scopeNames[0] === 'text.marko') {
+                // See if we are positioned after an attribute
+                if (this.isAfterAttribute(pos)) {
+                    inspected.completionType = completionType.ATTR_NAME;
+                }
 
+                if (!inspected.completionType) {
+                    if (tagName && inspected.concise === false) {
+                        // See if we are completing an ending tag
+                        let endingTagNameMatches = endingTagRegExp.exec(line);
+                        if (endingTagNameMatches) {
+                            let endingTagName = endingTagNameMatches[1];
+                            if (tagName.startsWith(endingTagName)) {
+                                inspected.completionType = completionType.TAG_END;
+                                inspected.shouldCompleteEndingTag = false;
+                            }
+                        }
                     }
                 }
 
-                break;
-            } else if (scopeName.endsWith('.js')) {
-                let tagAndAttrName = this.getTagAndAttributeNameFromPos(pos);
-                if (tagAndAttrName) {
-                    if (tagAndAttrName.attributeName) {
-                        inspected.completionType = completionType.ATTR_VALUE;
-                        inspected.tagName = tagAndAttrName.tagName;
-                        inspected.attributeName = tagAndAttrName.attributeName;
-                    } else {
+                if (!inspected.completionType) {
+                    if (line.endsWith('<')) {
                         inspected.completionType = completionType.TAG_START;
-                        inspected.tagName = tagAndAttrName.tagName;
+                        inspected.shouldCompleteEndingTag = true;
                     }
-
                 }
             }
         }
 
-        if (inspected.completionType === completionType.TAG_START) {
-            if (inspected.concise !== true) {
-                // Check for shorthand but only if it is not a concise tag
-                let shorthandMatches = tagShorthandRegExp.exec(this.prefix);
-                if (shorthandMatches) {
-                    inspected.shorthandTagName = shorthandMatches[1];
-                    inspected.hasShorthand = true;
-                }
-            }
-
-        } else if (!inspected.completionType) {
-            var beforeText = this.line.substring(0, this.pos.column - this.prefix.length);
-
-            if (beforeText.endsWith('</')) {
-                inspected.completionType = completionType.TAG_END;
-
-                let afterText =  this.lineAt(this.pos).substring(this.pos.column);
-                if (!afterText.startsWith('>')) {
-                    inspected.shouldCompleteEndingTag = true;
-                }
-            } else if (beforeText.endsWith('<')) {
-                inspected.completionType = completionType.TAG_START;
-            }
-        }
-
+        inspected.prefix = prefix;
         inspected.syntax = inspected.concise ? 'concise' : 'html';
-        inspected.prefix = this.prefix;
 
         return inspected;
     }
@@ -257,57 +220,45 @@ class Inspector {
 
     getTagAndAttributeNameFromPos(pos) {
         let curPos = this.getPreviousPos(pos);
+
+
         var tagName;
         var attributeName;
 
         while(curPos) {
             let charAtPos = this.charAt(curPos);
 
-            if (attributeName) {
-                // We already found the attribute name and
-                // now looking for the tag name.
-                if (tagNameCharsRegExp.test(charAtPos)) {
-                    if (this.isTagAtPos(curPos)) {
-                        let line = this.lineUpToPos(curPos, true /*inclusive*/);
-                        let tagNameMatches = tagNameRegExp.exec(line);
-                        if (tagNameMatches) {
-                            tagName = tagNameMatches[0];
-                            return {
-                                tagName,
-                                attributeName
-                            };
-                        }
-                    }
-                }
-            } else {
-                if (attrNameCharsRegExp.test(charAtPos) || (tagNameCharsRegExp.test(charAtPos))) {
-                    let scopeNames = this.getScopeNames(curPos);
+            if (attrNameCharsRegExp.test(charAtPos) || (tagNameCharsRegExp.test(charAtPos))) {
+                let scopeNames = this.getScopeNames(curPos);
 
-                    for (let i=0; i<scopeNames.length; i++) {
-                        let scopeName = scopeNames[i];
-                        var scopeInfo = scopesLookup[scopeName];
-                        if (scopeInfo) {
-                            if (scopeInfo.type === scopeType.TAG) {
-                                // We found a tag name before we found any attributes so we are done
-                                let line = this.lineUpToPos(curPos, true /*inclusive*/);
-                                let tagNameMatches = tagNameRegExp.exec(line);
-                                if (tagNameMatches) {
-                                    tagName = tagNameMatches[0];
-                                    return {
-                                        tagName
-                                    };
-                                } else {
-                                    return null;
-                                }
-                            } else if (scopeInfo.type === scopeType.ATTR_NAME) {
-                                let line = this.lineUpToPos(curPos, true /*inclusive*/);
-                                var attrNameMatches = attrNameRegExp.exec(line);
-                                if (attrNameMatches) {
-                                    attributeName = attrNameMatches[0];
-                                } else {
-                                    return null;
-                                }
+                for (let i=0; i<scopeNames.length; i++) {
+                    let scopeName = scopeNames[i];
+                    var scopeInfo = scopesLookup[scopeName];
+                    if (scopeInfo) {
+                        if (scopeInfo.type === scopeType.TAG) {
+                            // We found a tag name before we found any attributes so we are done
+                            let line = this.lineUpToPos(curPos, true /*inclusive*/);
+                            let tagNameMatches = tagNameRegExp.exec(line);
+                            if (tagNameMatches) {
+                                tagName = tagNameMatches[0];
+                                return {
+                                    tagName,
+                                    attributeName,
+                                    concise: scopeInfo.concise === true
+                                };
+                            } else {
+                                return null;
                             }
+                            break;
+                        } else if (!attributeName && scopeInfo.type === scopeType.ATTR_NAME) {
+                            let line = this.lineUpToPos(curPos, true /*inclusive*/);
+                            var attrNameMatches = attrNameRegExp.exec(line);
+                            if (attrNameMatches) {
+                                attributeName = attrNameMatches[0];
+                            } else {
+                                return null;
+                            }
+                            break;
                         }
                     }
                 }
@@ -333,13 +284,18 @@ class Inspector {
         return false;
     }
 
-    isAttributeAtPos(pos) {
-        var scopeNames = this.getScopeNames(pos);
-
+    isAttributeOrTagName(scopeNames) {
         for (let i=0; i<scopeNames.length; i++) {
             let scopeName = scopeNames[i];
+            if (scopeName.endsWith('.js')) {
+                return true;
+            }
+
             var scopeInfo = scopesLookup[scopeName];
-            if (scopeInfo && scopeInfo.type === scopeType.ATTR_NAME) {
+            if (scopeInfo && (
+                scopeInfo.type === scopeType.ATTR_NAME ||
+                scopeInfo.type === scopeType.ATTR_VALUE ||
+                scopeInfo.type === scopeType.TAG)) {
                 return true;
             }
         }
@@ -347,9 +303,9 @@ class Inspector {
         return false;
     }
 
-    inspectPrevToken(pos) {
+    isAfterAttribute(pos) {
         let curPos = this.getPreviousPos(pos);
-        let hasWhitespace;
+        let hasWhitespace = false;
 
         while(curPos) {
             let charAtPos = this.charAt(curPos);
@@ -358,12 +314,15 @@ class Inspector {
             } else if (/\s/.test(charAtPos)) {
                 hasWhitespace = true;
             } else {
+
                 let scopeNames = this.getScopeNames(curPos);
 
                 if (scopeNames.length > 1) {
-                    let inspected = this.inspect(curPos);
-                    inspected.hasWhitespace = hasWhitespace;
-                    return inspected;
+                    if (hasWhitespace && this.isAttributeOrTagName(scopeNames)) {
+                        return true;
+                    }
+
+                    return false;
                 }
             }
 
@@ -374,7 +333,7 @@ class Inspector {
             }
         }
 
-        return null;
+        return false;
     }
 }
 

@@ -8,6 +8,7 @@ var lassoPackageRoot = require('lasso-package-root');
 
 const SORT_PRIORITY_GLOBAL = 5;
 const SORT_PRIORITY_LOCAL = 10;
+const EMPTY_ARRAY = [];
 
 function getDefaultDir() {
     var project = atom.project;
@@ -109,7 +110,7 @@ class SuggestionsBuilder {
 
         var inspected = this.inspected = inspector.inspect();
 
-        this.prefix = inspected.prefix;
+        this.prefix = inspected ? inspected.prefix : request.prefix;
 
         var editor = request.editor;
 
@@ -125,6 +126,9 @@ class SuggestionsBuilder {
 
     getSuggestions() {
         var inspected = this.inspected;
+        if (!inspected) {
+            return EMPTY_ARRAY;
+        }
 
         switch (inspected.completionType) {
             case completionType.TAG_START:
@@ -195,7 +199,7 @@ class SuggestionsBuilder {
 
         if (inspected.hasShorthand) {
             if (inspected.concise !== true && inspected.shouldCompleteEndingTag !== false) {
-                let tagName = inspected.shorthandTagName;
+                let tagName = inspected.tagName;
 
                 this.addSuggestion({
                     text: tagName,
@@ -329,7 +333,9 @@ class SuggestionsBuilder {
                     };
 
                     if (typeof attrValueOption === 'string') {
-                        suggestion = attrValueOption;
+                        suggestion = {
+                            text: attrValueOption
+                        };
                     } else {
                         Object.assign(suggestion, attrValueOption);
                     }
