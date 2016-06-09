@@ -149,6 +149,14 @@
             {},
             {
                 "snippet": "!DOCTYPE html"
+            },
+            {
+                "displayText": "HTML page",
+                "snippet": "<!DOCTYPE html>\n<html lang=\"en\">\n\t<head>\n\t\t<meta charset=\"UTF-8\">\n\t\t<title>${1:title}</title>\n\t</head>\n\t<body>\n\t\t$2\n\t</body>\n</html>\n"
+            },
+            {
+                "displayText": "HTML page (concise)",
+                "snippet": "<!DOCTYPE html>\nhtml lang=\"en\"\n\thead\n\t\tmeta charset=\"UTF-8\"\n\t\t<title>${1:title}</title>\n\tbody\n\t\t$2\n"
             }
         ]
     },

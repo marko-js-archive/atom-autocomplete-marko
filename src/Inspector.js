@@ -16,7 +16,7 @@ var attrNameCharsRegExp = /[a-zA-Z0-9_#.:-]/;
 var attrNameRegExp = /[a-zA-Z0-9.\-:]+$/;
 
 var attrCompletionRegExp = /([a-zA-Z0-9.\-:]+)(=["'][A-Za-z0-9_\-\.\#]*)?$/;
-var tagCompletionRegExp = /([a-zA-Z0-9.\-:]+)$/;
+var tagCompletionRegExp = /([a-zA-Z0-9.\-:#]+)$/;
 
 var scopesLookup = {
     // Attribute name:
@@ -64,23 +64,13 @@ class Inspector {
     inspect() {
         var pos = this.pos;
 
-        let inspected = this.getTagAndAttributeNameFromPos(pos);
-        if (!inspected) {
-            return null;
-        }
+        let inspected = this.getTagAndAttributeNameFromPos(pos) || {};
 
         let attrName = inspected.attributeName;
         let tagName = inspected.tagName;
         let line = this.lineUpToPos(pos);
         let prefixMatches = prefixRegExp.exec(line);
         let prefix = prefixMatches ? prefixMatches[0] : '';
-
-        // Check for shorthand but only if it is not a concise tag
-        let shorthandMatches = tagShorthandRegExp.exec(tagName);
-        if (shorthandMatches) {
-            inspected.tagName = shorthandMatches[1];
-            inspected.hasShorthand = true;
-        }
 
         if (attrName) {
             // Make sure the previous attribute is what ends at the current cursor position
@@ -111,6 +101,13 @@ class Inspector {
                     }
                 }
             }
+        }
+
+        // Check for shorthand but only if it is not a concise tag
+        let shorthandMatches = tagShorthandRegExp.exec(tagName);
+        if (shorthandMatches) {
+            inspected.tagName = shorthandMatches[1];
+            inspected.hasShorthand = true;
         }
 
         if (!inspected.completionType) {

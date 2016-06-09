@@ -365,16 +365,16 @@ class SuggestionsBuilder {
                 mergedSuggestion.displayText = tagName;
             }
 
-            if (inspected.shouldCompleteEndingTag && mergedSuggestion.snippet) {
-                if (inspected.concise) {
-                    mergedSuggestion.snippet = mergedSuggestion.snippet + '${99}';
-                } else {
+            if (mergedSuggestion.snippet) {
+                if (!inspected.concise && inspected.shouldCompleteEndingTag) {
                     if (openTagOnly || mergedSuggestion.openTagOnly) {
-                        mergedSuggestion.snippet = mergedSuggestion.snippet + ' />${99}';
+                        mergedSuggestion.snippet = mergedSuggestion.snippet + '${99} />';
                     } else {
-                        mergedSuggestion.snippet = mergedSuggestion.snippet + '>${99}</' + tagName + '>${100}';
+                        mergedSuggestion.snippet = mergedSuggestion.snippet + '${98}>${99}</' + tagName + '>';
                     }
                 }
+
+                mergedSuggestion.snippet = mergedSuggestion.snippet + '${100}';
             }
 
             this.addSuggestion(mergedSuggestion);
@@ -535,7 +535,7 @@ class SuggestionsBuilder {
         };
 
         if (inspected.shouldCompleteAttributeValue !== false) {
-            suggestion.snippet = attrName + "=\"$1\"$0";
+            suggestion.snippet = attrName + "=\"$1\"$2";
 
             if (attrInfo.attribOption) {
                 suggestion.triggerAutocomplete = true;
