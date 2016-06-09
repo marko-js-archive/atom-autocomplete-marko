@@ -333,9 +333,7 @@ class SuggestionsBuilder {
                     };
 
                     if (typeof attrValueOption === 'string') {
-                        suggestion = {
-                            text: attrValueOption
-                        };
+                        suggestion.text = attrValueOption;
                     } else {
                         Object.assign(suggestion, attrValueOption);
                     }
