@@ -1,6 +1,6 @@
 {
   "name": "autocomplete-marko",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Marko element and attribute autocompletions",
   "main": "./src/index",
   "license": "MIT",
@@ -15,8 +15,7 @@
       }
     }
   },
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "dependencies": {
     "fuzzaldrin-plus": "^0.3.1",
     "lasso-package-root": "^1.0.0",
