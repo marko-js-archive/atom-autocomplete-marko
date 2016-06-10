@@ -1,9 +1,9 @@
-HTML Autocomplete Package
+Marko Autocomplete Package
 =========================
 
-[Autocomplete+](https://github.com/atom/autocomplete-plus) provider that provides advanced Marko tag and attribute autocompletions in Atom.
+The package provides an [autocomplete-plus](https://github.com/atom/autocomplete-plus) provider that provides advanced tag and attribute autocompletions for [Marko templates](http://markojs.com/) in Atom.
 
-This provider uses the Marko compiler to get an accurate list of available Marko custom tags and attributes for each template. In addition, this provider also provides full support for suggesting completions for standard HTML tags and attributes.
+This provider uses the Marko compiler to get an accurate list of available Marko custom tags and attributes for each template. In addition, this provider also provides full support for autocompleting standard HTML tags and attributes.
 
 # Installation
 
@@ -37,4 +37,6 @@ apm install autocomplete-marko
 
 ![Lasso.js](https://cloud.githubusercontent.com/assets/978214/15950058/cb396508-2e68-11e6-9d9f-25387936235f.gif)
 
+# License
 
+Licensed under the [MIT License](https://github.com/marko-js/atom-autocomplete-marko/blob/master/LICENSE)
