@@ -198,12 +198,16 @@ class SuggestionsBuilder {
         var prefix = this.prefix;
 
         if (this.inspected.completionType === completionType.TAG_END) {
-            this.addSuggestion({
-                text: inspected.tagName,
-                displayText: inspected.tagName,
-                sortText: inspected.tagName,
-                type: 'tag'
-            });
+            let text = inspected.tagName + ( inspected.shouldCompleteEndingTag ? '>' : '' );
+
+            if (this.prefix !== text) {
+                this.addSuggestion({
+                    text: text,
+                    displayText: inspected.tagName,
+                    sortText: inspected.tagName,
+                    type: 'tag'
+                });
+            }
             return;
         }
 

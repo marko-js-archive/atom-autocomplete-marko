@@ -9,7 +9,9 @@ var tagNameCharsRegExp = /[a-zA-Z0-9_#.:-]/;
 
 var tagNameRegExp = /[a-zA-Z0-9.\-:#]+$/;
 
-var endingTagRegExp = /<\/([a-zA-Z0-9.\-:]+)$/;
+var endingTagRegExp = /<\/([a-zA-Z0-9.\-:#]+)?$/;
+
+var endingTagBracketRegExp = /^\s*>/;
 
 var attrNameCharsRegExp = /[a-zA-Z0-9_#.:-]/;
 
@@ -45,6 +47,10 @@ var scopesLookup = {
     'meta.tag.structure.any.html': { type: scopeType.TAG }
 };
 
+
+function checkEndingTag() {
+
+}
 class Inspector {
     constructor(request) {
         var editor = request.editor;
@@ -93,12 +99,22 @@ class Inspector {
             if (matches) {
                 let expectedTagName = matches[1];
                 if (expectedTagName === tagName) {
-                    inspected.completionType = completionType.TAG_START;
-                    if (!inspected.concise) {
-                        if (this.isTagAtPos(pos)) {
-                            inspected.shouldCompleteEndingTag = true;
+                    let endingTagNameMatches = endingTagRegExp.exec(line);
+                    if (endingTagNameMatches) {
+                        // FIXME inspected.tagName should really be the last unclosed tag
+                        inspected.completionType = completionType.TAG_END;
+                        inspected.shouldCompleteEndingTag = endingTagBracketRegExp.exec(
+                            this.lineFromPos(pos)) == null;
+                        inspected.hasShorthand = false;
+                    } else {
+                        inspected.completionType = completionType.TAG_START;
+                        if (!inspected.concise) {
+                            if (this.isTagAtPos(pos)) {
+                                inspected.shouldCompleteEndingTag = true;
+                            }
                         }
                     }
+
                 }
             }
         }
@@ -123,10 +139,12 @@ class Inspector {
                         // See if we are completing an ending tag
                         let endingTagNameMatches = endingTagRegExp.exec(line);
                         if (endingTagNameMatches) {
-                            let endingTagName = endingTagNameMatches[1];
+                            let endingTagName = endingTagNameMatches[1] || '';
                             if (tagName.startsWith(endingTagName)) {
                                 inspected.completionType = completionType.TAG_END;
-                                inspected.shouldCompleteEndingTag = false;
+
+                                inspected.shouldCompleteEndingTag = endingTagBracketRegExp.exec(
+                                    this.lineFromPos(pos)) == null;
                                 inspected.hasShorthand = false;
                             }
                         }
@@ -148,6 +166,7 @@ class Inspector {
         return inspected;
     }
 
+
     getScopeNames(pos) {
         if (!pos || pos === this.pos) {
             return this.scopeDescriptor.getScopesArray();
@@ -165,6 +184,11 @@ class Inspector {
     lineUpToPos(pos, inclusive) {
         var line = this.editor.lineTextForBufferRow(pos.row);
         return line.substring(0, inclusive ? pos.column + 1 : pos.column);
+    }
+
+    lineFromPos(pos) {
+        var line = this.editor.lineTextForBufferRow(pos.row);
+        return line.substring(pos.column);
     }
 
     lineAt(pos) {
