@@ -1,6 +1,6 @@
 {
   "name": "autocomplete-marko",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Marko element and attribute autocompletions",
   "main": "./src/index",
   "license": "MIT",
