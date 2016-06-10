@@ -197,6 +197,16 @@ class SuggestionsBuilder {
     addTagSuggestions(inspected) {
         var prefix = this.prefix;
 
+        if (this.inspected.completionType === completionType.TAG_END) {
+            this.addSuggestion({
+                text: inspected.tagName,
+                displayText: inspected.tagName,
+                sortText: inspected.tagName,
+                type: 'tag'
+            });
+            return;
+        }
+
         if (inspected.hasShorthand) {
             if (inspected.concise !== true && inspected.shouldCompleteEndingTag !== false) {
                 let tagName = inspected.tagName;

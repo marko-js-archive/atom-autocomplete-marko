@@ -127,6 +127,7 @@ class Inspector {
                             if (tagName.startsWith(endingTagName)) {
                                 inspected.completionType = completionType.TAG_END;
                                 inspected.shouldCompleteEndingTag = false;
+                                inspected.hasShorthand = false;
                             }
                         }
                     }
