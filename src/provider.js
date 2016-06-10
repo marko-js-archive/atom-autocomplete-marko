@@ -87,5 +87,7 @@ module.exports = {
         atom.workspace.observeTextEditors((editor) => {
             editor.onDidSave(handleEditorSave);
         });
+
+        return Promise.resolve();
     }
 };
