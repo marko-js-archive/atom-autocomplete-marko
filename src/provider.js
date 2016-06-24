@@ -78,7 +78,7 @@ module.exports = {
             var filePath = event.path;
             if (filePath) {
                 var filename = path.basename(filePath);
-                if (filename === 'marko-tag.json' || filename === 'marko.json') {
+                if (filename === 'marko-tag.json' || filename === 'marko.json' || filename === 'package.json') {
                     markoCompiler.clearCaches();
                 }
             }
