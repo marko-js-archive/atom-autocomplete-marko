@@ -484,7 +484,7 @@ class SuggestionsBuilder {
             leftLabel: attr.type
         };
 
-        let taglibPath = tag.taglibId || tag.taglibPath;
+        let taglibPath = tag.filePath || tag.taglibId || tag.taglibPath;
         if (taglibPath) {
             suggestion.rightLabel = getTaglibLabel(taglibPath);
         }
