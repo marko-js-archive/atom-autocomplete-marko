@@ -1,6 +1,6 @@
 {
   "name": "autocomplete-marko",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "description": "Marko element and attribute autocompletions - DEPRECATED",
   "main": "./src/index",
   "license": "MIT",
